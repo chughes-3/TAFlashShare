@@ -2,13 +2,15 @@
 using System.Text;
 using System.Threading;
 
-namespace Tax_AideFlashShare
+namespace TaxAideFlashShare
 {
     class ProgOverallThread
     {
         public static ProgessOverall progOverallWin; //the window
         public delegate void ProgUpdateDelegate(string txtMessAdditional); // delegate for invoking progress window update 1 string parameter
         public static ProgUpdateDelegate progressUpdate; // progress window methods that are invoked on a different thread
+        public delegate void EnableOKDelegate();
+        public static EnableOKDelegate EnableOKDel;
         public ProgOverallThread()
         {
             progOverallWin = new ProgessOverall(); //get teh progress form initialized
@@ -16,6 +18,7 @@ namespace Tax_AideFlashShare
             progressThread.Start();
             Thread.Sleep(200); //allow window to appear
             progressUpdate = new ProgUpdateDelegate(progOverallWin.AddTxtLine); //delegate for later use in updating window
+            EnableOKDel = new EnableOKDelegate(progOverallWin.EnableOk); //delegate for later use in finalization
         }
     }
 }

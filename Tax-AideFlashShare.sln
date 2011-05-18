@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tax-AideFlashShare", "Tax-AideFlashShare\Tax-AideFlashShare.csproj", "{5242C39F-B5EB-485C-8D0E-3CE807B130F0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaxAideFlashShare", "Tax-AideFlashShare\TaxAideFlashShare.csproj", "{5242C39F-B5EB-485C-8D0E-3CE807B130F0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

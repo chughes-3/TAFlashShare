@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace Tax_AideFlashShare
+namespace TaxAideFlashShare
 {
     static class TAFlashShareMain
     {
@@ -15,39 +15,39 @@ namespace Tax_AideFlashShare
             new ProgOverallThread(); // initialize status window
             ProgramData thisProg = new ProgramData();
             Pdrive fold = new Pdrive(thisProg);
-            if (thisProg.removable)
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "We have a removable drive" });
-            else
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Not running from a removable drive. At this point the program will do nothing" });
             if (args.Length == 0)
             {
                 if (thisProg.removable)
                 {
-                    fold.CheckUsersPublicShares();  // check conditions are right for setting up shares
-                    fold.SymbolicLink(fold.folder2Share + "\\" + thisProg.drvLetter, thisProg.drvLetter + ":\\", true);
-                    fold.ShareFolder(thisProg.drvLetter);
-                    fold.MapDrive(thisProg.drvLetter);
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "\r\n" + Pdrive.mapDriveName + "  Drive Created and Shared. \r\nIf on a network the Workstations can be started now " });
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "We have a removable drive" });
+                    //fold.CheckUsersPublicShares();  // check conditions are right for setting up shares
+                    if (fold.SetSymbolicLink(fold.folder2Share + "\\" + ProgramData.symLinkName , thisProg.drvLetter + ":\\") != 0)
+                        return; //Error on creation of symlink should have been output so simply exit leaving message window up
+                    if (fold.ShareFolder(thisProg.drvLetter) != 0)
+                        return; // failed on folder sharing
+                    if (fold.MapDrive(thisProg.drvLetter) != 0)
+                        return; //failed mapping
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "\r\n\r\n" + Pdrive.mapDriveName + "  Drive Created and Shared. \r\nIf on a network the Workstations can be started now " });
+                    ProgOverallThread.EnableOKDel.Invoke();
                 }
+                else
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Not running from a removable drive. At this point the program will do nothing" });
             }
             else
                 switch (args[0])
                 {
                     case "/u":
                         fold.UnMapDrive();
-                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.mapDriveName + " Drive Unmapped" });
                         fold.DeleteShares();
-                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.shareName + "Share Deleted" });
-                        System.IO.Directory.Delete(fold.folder2Share + "\\" + thisProg.drvLetter);
-                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Symbolic Link \"" + fold.folder2Share + "\\" + thisProg.drvLetter + "\" Deleted" });
+                        fold.DeleteSymLink();
+                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "\r\n\r\n" + Pdrive.mapDriveName + "  Drive UnMapped, and Unshared" });
+                        ProgOverallThread.EnableOKDel.Invoke();
                         break;
                     default:
                         MessageBox.Show("Error in calling argument\n\n   Exiting", ProgramData.mbCaption, MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                        Environment.Exit(1);
                         break;
                 }
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
         }
     }
 }

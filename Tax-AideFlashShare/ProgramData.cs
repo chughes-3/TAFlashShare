@@ -5,12 +5,14 @@ using System.Text.RegularExpressions;
 using System.Management;
 using System.Reflection;
 using System.Windows.Forms;
+using System.IO;
 
-namespace Tax_AideFlashShare
+namespace TaxAideFlashShare
 {
     class ProgramData
     {
         public static readonly string mbCaption = "AARP Tax-Aide P Drive Share";
+        public const string symLinkName = "TASymLink";
         public static int osVer;    //5=xp 6=vista or win7
         public string drvLetter; //Holds letter of drive on Script exe path
         public bool removable = false;  //will be set later if program running from usb drive
@@ -26,10 +28,19 @@ namespace Tax_AideFlashShare
             ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Testing for removable drive" });
             GetUSBDrivesSetRemovable();
             osVer = Environment.OSVersion.Version.Major;
-            if (osVer != 5 && osVer != 6)
+            switch (osVer)
             {
-                MessageBox.Show("Unknown OS, Exiting", mbCaption, MessageBoxButtons.OK, MessageBoxIcon.Stop);
-                Environment.Exit(1);
+                case 5:
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Running on Win-XP NOT IMPLEMENTED - Out of Here" });
+                    MessageBox.Show("XP - Out of Here");
+                    Application.Exit();
+                    break;
+                case 6:
+                    break;
+                default:
+                    MessageBox.Show("Unknown OS, Exiting", mbCaption, MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    Environment.Exit(1);
+                    break;
             }
         }
 
@@ -79,6 +90,43 @@ namespace Tax_AideFlashShare
                     }
                 }
             }
+        }
+        /// <summary> Intellisense for CopyFileFromThisAssembly
+        /// Copies embedded file from this assembly
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="destPath"></param>
+        /// <returns></returns>
+        internal int CopyFileFromThisAssembly(string filename, string destPath)
+        {
+            string assemblyResourceLocation = Assembly.GetExecutingAssembly().GetName().Name + ".Embedded.";
+            //create a buffer originally had 2k but 64k speeded things up in utility
+            int n = 0x800; //2048
+            byte[] dataBuffer = new byte[n];
+            try
+            {
+                string[] fss = Assembly.GetExecutingAssembly().GetManifestResourceNames();
+                using (Stream fsSource = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream(assemblyResourceLocation + filename))
+                {
+                    using (FileStream fsNew = new FileStream(destPath + "\\" + filename, FileMode.Create, FileAccess.Write))
+                    {
+                        BinaryReader fsSourceBin = new BinaryReader(fsSource);
+                        BinaryWriter fsNewBin = new BinaryWriter(fsNew);
+                        while (n > 0)
+                        {
+                            n = fsSourceBin.Read(dataBuffer, 0, n);
+                            fsNewBin.Write(dataBuffer, 0, n);
+                        }
+                        fsNewBin.Flush();// I would have thought using fixed this but one error on xp was fixed by this.
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] {"Exception in Reflection File Copying is " + e.ToString()});
+                return 1;
+            }
+            return 0;
         }
     }
 }

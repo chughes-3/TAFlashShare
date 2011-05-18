@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace Tax_AideFlashShare
+namespace TaxAideFlashShare
 {
     public partial class ProgessOverall : Form
     {
@@ -24,10 +24,19 @@ namespace Tax_AideFlashShare
             this.statusText.Text += "\r\n" +updateTxt;
             this.Update();
         }
-
+        public void EnableOk()
+        {
+            buttonOK.Enabled = true;
+            this.Update();
+        }
         private void buttonCancel_Click(object sender, EventArgs e)
         {
             Environment.Exit(1);
+        }
+
+        private void buttonOK_Click(object sender, EventArgs e)
+        {
+            Environment.Exit(0);
         }
     }
 }

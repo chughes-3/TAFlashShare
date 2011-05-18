@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Tax_AideFlashShare
+namespace TaxAideFlashShare
 {
     enum WinNetConst : uint
     {
@@ -149,7 +149,7 @@ namespace Tax_AideFlashShare
         /// <summary>
         /// Map network drive
         /// </summary>
-        public void MapDrive() { zMapDrive(null, null); }
+        public int MapDrive() { if (zMapDrive(null, null) == 0) return 0; else return 1; }
         /// <summary>
         /// Map network drive (using supplied Password)
         /// </summary>
@@ -161,11 +161,11 @@ namespace Tax_AideFlashShare
         /// <summary>
         /// Unmap network drive
         /// </summary>
-        public void UnMapDrive() { zUnMapDrive(this.lf_Force); }
+        public int UnMapDrive() { if (zUnMapDrive(this.lf_Force) == 0) return 0; else return 1; }
         /// <summary>
         /// Check / restore persistent network drive
         /// </summary>
-        public void RestoreDrives() { zRestoreDrive(); }
+        public void RestoreDrives() {zRestoreDrive(); }
         /// <summary>
         /// Display windows dialog for mapping a network drive
         /// </summary>
@@ -181,7 +181,7 @@ namespace Tax_AideFlashShare
         #region Internal to Class Core functions
 
         // Map network drive
-        private void zMapDrive(string psUsername, string psPassword)
+        private int zMapDrive(string psUsername, string psPassword)
         {
             //create struct data
             netResourceStruct stNetRes = new netResourceStruct();
@@ -198,33 +198,31 @@ namespace Tax_AideFlashShare
             if (ls_PromptForCredentials) { iFlags += (uint) WinNetConst.CONNECT_INTERACTIVE + (uint) WinNetConst.CONNECT_PROMPT; }
             if (psUsername == "") { psUsername = null; }
             if (psPassword == "") { psPassword = null; }
-            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "shareName=" + ls_ShareName + ", lsDrive =" + ls_Drive+"," });
             //if force, unmap ready for new connection
             if (lf_Force) { try { zUnMapDrive(true); } catch { } }
             //call and return
             try
             {
                 int i = WNetAddConnection2(ref stNetRes, psPassword, psUsername, iFlags);
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "i is = " + i.ToString() });
                 if (i > 0) { throw new System.ComponentModel.Win32Exception(i); }
             }
             catch (System.ComponentModel.Win32Exception w)
             {
                 GenMsg4Win32Ex(w);
-                Environment.Exit(1);
+                return 1;
             }
+            return 0;
         }
 
         void GenMsg4Win32Ex(System.ComponentModel.Win32Exception w)
         {
             System.Exception e = w.GetBaseException();
             ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] {String.Format("Error on Mapping or UnMapping Drive\n\nMessage = {0}\n\nError Code = 0x{1:x}, Native Error Code = 0x{2:x}\nStack Trace = {3}\nSource = {4}\nBase Exception = {5}\n\nNetwork Share = {6}\nMap Drive = {7}", w.Message, w.ErrorCode, w.NativeErrorCode, w.StackTrace, w.Source, e.Message, ls_ShareName, ls_Drive)});
-            System.Threading.Thread.Sleep(10000);
         }
 
 
         // Unmap network drive	
-        private void zUnMapDrive(bool pfForce)
+        private int zUnMapDrive(bool pfForce)
         {
             //call unmap and return
             uint iFlags = 0;
@@ -238,8 +236,10 @@ namespace Tax_AideFlashShare
             catch (System.ComponentModel.Win32Exception w)
             {
                 GenMsg4Win32Ex(w); //If unmapping we want to continue to do rest of deletions
-                //Environment.Exit(1);
+                return 1;
             }
+            return 0;
+
         }
 
 
