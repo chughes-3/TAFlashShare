@@ -21,9 +21,10 @@ namespace TaxAideFlashShare
                 {
                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "We have a removable drive" });
                     //fold.CheckUsersPublicShares();  // check conditions are right for setting up shares
-                    if (fold.SetSymbolicLink(fold.folder2Share + "\\" + ProgramData.symLinkName , thisProg.drvLetter + ":\\") != 0)
+                    thisProg.CreateShortcuts();
+                    if (fold.SetSymbolicLink() != 0)
                         return; //Error on creation of symlink should have been output so simply exit leaving message window up
-                    if (fold.ShareFolder(thisProg.drvLetter) != 0)
+                    if (fold.ShareFolder() != 0)
                         return; // failed on folder sharing
                     if (fold.MapDrive(thisProg.drvLetter) != 0)
                         return; //failed mapping
@@ -40,6 +41,7 @@ namespace TaxAideFlashShare
                         fold.UnMapDrive();
                         fold.DeleteShares();
                         fold.DeleteSymLink();
+                        System.IO.File.Delete(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA FlashShare.lnk");  //Delete the shortcut file
                         ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "\r\n\r\n" + Pdrive.mapDriveName + "  Drive UnMapped, and Unshared" });
                         ProgOverallThread.EnableOKDel.Invoke();
                         break;

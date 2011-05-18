@@ -217,7 +217,7 @@ namespace TaxAideFlashShare
         void GenMsg4Win32Ex(System.ComponentModel.Win32Exception w)
         {
             System.Exception e = w.GetBaseException();
-            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] {String.Format("Error on Mapping or UnMapping Drive\n\nMessage = {0}\n\nError Code = 0x{1:x}, Native Error Code = 0x{2:x}\nStack Trace = {3}\nSource = {4}\nBase Exception = {5}\n\nNetwork Share = {6}\nMap Drive = {7}", w.Message, w.ErrorCode, w.NativeErrorCode, w.StackTrace, w.Source, e.Message, ls_ShareName, ls_Drive)});
+            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] {String.Format("Error on Mapping or UnMapping Drive\n\nMessage = {0}\n\nError Code = 0x{1:x}, Native Error Code = 0x{2:x}\nStack Trace = {3}\nSource = {4}\nBase Exception = {5}", w.Message, w.ErrorCode, w.NativeErrorCode, w.StackTrace, w.Source, e.Message)});
         }
 
 

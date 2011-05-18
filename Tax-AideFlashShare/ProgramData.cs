@@ -13,12 +13,15 @@ namespace TaxAideFlashShare
     {
         public static readonly string mbCaption = "AARP Tax-Aide P Drive Share";
         public const string symLinkName = "TASymLink";
-        public static int osVer;    //5=xp 6=vista or win7
+        public static int osVerMaj;    //5=xp 6=vista or win7
+        public static int osVerMin;    // vista = 0 win 7 = 1
         public string drvLetter; //Holds letter of drive on Script exe path
         public bool removable = false;  //will be set later if program running from usb drive
         public string scriptExePath = Assembly.GetEntryAssembly().CodeBase;    // format is, file:///D:/blah/blah.exe so 3 slashes then next 2 to get drive
+        string thisProgName = Assembly.GetExecutingAssembly().GetName().Name;
         string patternPath = "(?<=///).+(?=/.*$)";  //matches d:/trav in file:///d:/trav/abc.exe
         //string pattern = "(?<=//)[a-zA-Z](?=:)";    //matches // followed by a letter followed by :
+
         public ProgramData()
         {
             Regex r = new Regex(patternPath);
@@ -27,15 +30,18 @@ namespace TaxAideFlashShare
             drvLetter = scriptExePath.Substring(0, 1);
             ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Testing for removable drive" });
             GetUSBDrivesSetRemovable();
-            osVer = Environment.OSVersion.Version.Major;
-            switch (osVer)
+            osVerMaj = Environment.OSVersion.Version.Major;
+            osVerMin = Environment.OSVersion.Version.Minor;
+            switch (osVerMaj)
             {
                 case 5:
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Running on Win-XP NOT IMPLEMENTED - Out of Here" });
-                    MessageBox.Show("XP - Out of Here");
-                    Application.Exit();
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Running on Windows-XP" });
                     break;
                 case 6:
+                    if (osVerMin == 0)
+                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Running on Windows Vista" }); 
+                    else
+                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Running on Windows 7" });
                     break;
                 default:
                     MessageBox.Show("Unknown OS, Exiting", mbCaption, MessageBoxButtons.OK, MessageBoxIcon.Stop);
@@ -99,7 +105,7 @@ namespace TaxAideFlashShare
         /// <returns></returns>
         internal int CopyFileFromThisAssembly(string filename, string destPath)
         {
-            string assemblyResourceLocation = Assembly.GetExecutingAssembly().GetName().Name + ".Embedded.";
+            string assemblyResourceLocation = thisProgName + ".Embedded.";
             //create a buffer originally had 2k but 64k speeded things up in utility
             int n = 0x800; //2048
             byte[] dataBuffer = new byte[n];
@@ -127,6 +133,24 @@ namespace TaxAideFlashShare
                 return 1;
             }
             return 0;
+        }
+        internal void CreateShortcuts()
+        {
+            CopyFileFromThisAssembly("StopShare.ico", Environment.GetEnvironmentVariable("temp"));
+            shelllink.ShellLink desktopShortcut = new shelllink.ShellLink();
+            desktopShortcut.ShortCutFile = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA FlashShare.lnk";
+            desktopShortcut.Target = scriptExePath + "\\" + thisProgName;
+            desktopShortcut.Arguments = "/u";
+            desktopShortcut.IconPath = Environment.GetEnvironmentVariable("temp") + "\\" + "StopShare.ico";
+            desktopShortcut.Save();
+            desktopShortcut.Dispose();
+            shelllink.ShellLink flashShortcut = new shelllink.ShellLink();
+            flashShortcut.ShortCutFile = scriptExePath + "\\Delete TA FlashShare.lnk";
+            flashShortcut.Target = scriptExePath + "\\" + thisProgName;
+            flashShortcut.Arguments = "/u";
+            flashShortcut.IconPath = scriptExePath + "\\" + thisProgName;
+            flashShortcut.Save();
+            flashShortcut.Dispose();
         }
     }
 }

@@ -50,6 +50,7 @@
       <DependentUpon>ProgessOverall.cs</DependentUpon>
     </Compile>
     <Compile Include="ProgOverallThread.cs" />
+    <Compile Include="ShellLink.cs" />
     <Compile Include="TAFlashShareMain.cs" />
     <Compile Include="ProgramData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -82,7 +83,12 @@
     <EmbeddedResource Include="..\Tax-AideSymLink\bin\Debug\Tax-AideSymLink.exe">
       <Link>Embedded\Tax-AideSymLink.exe</Link>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\TaxAideDeleteShr\bin\Debug\TaxAideDeleteShr.exe">
+      <Link>Embedded\TaxAideDeleteShr.exe</Link>
+    </EmbeddedResource>
     <Content Include="AARPLookAlike.ico" />
+    <EmbeddedResource Include="Embedded\junction.exe" />
+    <EmbeddedResource Include="Embedded\StopShare.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

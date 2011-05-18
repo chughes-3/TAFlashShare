@@ -14,28 +14,33 @@ namespace TaxAideFlashShare
         public const string shareName = "TaxWiseServer_" + mapDriveLetter;
         const string shareNameLegacy = "TWSRVR_" + mapDriveLetter; 
         public string folder2Share; // NO SLASHES AT END
+        public string symLinkPath;
         ProgramData thisProginst;
         NetDrive pDrv = new NetDrive();
         enum shareCreateErrorCodes { Success = 0, AccessDenied = 2, UnknownFailure = 8, InvalidName = 9, InvalidLevel = 10, InvalidParameter = 21, DuplicateShare = 22, RedirectedPath = 23, UnknownDeviceorDirectory = 24, NetNameNotFound = 25 }
         public Pdrive(ProgramData thisProg)
         {
             thisProginst = thisProg;
-            if (ProgramData.osVer == 6)
+            if (ProgramData.osVerMaj == 6)
             {
                 //setup public folders
                 folder2Share = Environment.GetEnvironmentVariable("PUBLIC");
             }
             else
             {
-                if (!Directory.Exists(Environment.GetEnvironmentVariable("HOMEDRIVE") + "\\PUBLIC"))
-                    Directory.CreateDirectory(Environment.GetEnvironmentVariable("HOMEDRIVE") + "\\PUBLIC"); //Permissions????
-                folder2Share = Environment.GetEnvironmentVariable("HOMEDRIVE") + "\\PUBLIC";
+                folder2Share = Environment.GetEnvironmentVariable("HOMEDRIVE");
             }
+            symLinkPath = folder2Share + "\\" + ProgramData.symLinkName;
         }
         internal int MapDrive(string scriptDrvLetter)
         {
-            pDrv.LocalDrive = mapDriveName;    //slashes are removed
-            pDrv.ShareName = "\\\\" + Environment.GetEnvironmentVariable("COMPUTERNAME") + "\\" + shareName; //removes drive letter
+            if (Directory.Exists(mapDriveName))
+            {
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.mapDriveName + " Drive Exists. Either disconnect it manually or by running this programs delete option - then rerun this program" });
+                return 1;
+            }
+            pDrv.LocalDrive = mapDriveName;    //slashes are removed by called method
+            pDrv.ShareName = "\\\\" + Environment.GetEnvironmentVariable("COMPUTERNAME") + "\\" + shareName; 
             if (pDrv.MapDrive() == 0)
             {
                 ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.mapDriveName + " Drive Mapped" });
@@ -61,36 +66,84 @@ namespace TaxAideFlashShare
                 return 1;
             }
         }
-        internal int SetSymbolicLink(string symLinkPath, string targetPath)
+
+        internal int SetSymbolicLink()
         {
             if (Directory.Exists(symLinkPath))
             {
                 ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Symbolic Link already exists - will not attempt creation" });
                 return 0;
             }
-            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Getting Admin permission to create Symbolic Link" });
-            //get exe file out of assembly
-            if (thisProginst.CopyFileFromThisAssembly("Tax-AideSymLink.exe",Environment.GetEnvironmentVariable("temp")) != 0) return 1;
-            Process p = new Process();
-            p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\Tax-AideSymLink.exe", symLinkPath + " " + targetPath);
-            p.Start();
-            p.WaitForExit();
-            if (p.ExitCode == 0)
-            {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Symbolic Link Created" });
-                return 0;
+            if (ProgramData.osVerMaj > 5)
+            {//We have vista or W7
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Getting Admin permission to create Symbolic Link" });
+                //get exe file out of assembly
+                if (thisProginst.CopyFileFromThisAssembly("Tax-AideSymLink.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\Tax-AideSymLink.exe", symLinkPath + " " +thisProginst.drvLetter + ":\\");
+                p.Start();
+                p.WaitForExit();
+                if (p.ExitCode == 0)
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Symbolic Link Created" });
+                    return 0;
+                }
+                else
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Cannot create Symbolic Link" });
+                    return 1;
+                }
             }
             else
             {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Cannot create Symbolic Link" });
-                return 1;
+                if (thisProginst.CopyFileFromThisAssembly("junction.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\junction.exe", symLinkPath + " " + thisProginst.drvLetter + ":\\" + " /accepteula");
+                p.Start();
+                p.WaitForExit();
+                if (p.ExitCode == 0)
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Windows-XP junction created" });
+                    return 0;
+                }
+                else
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Cannot create Windows-XP junction" });
+                    return 1;
+                }
+            }
+        }
+        internal void DeleteSymLink()
+        {
+            if (ProgramData.osVerMaj > 5)
+            {// Vista or Win 7
+                if (Directory.Exists(symLinkPath))
+                    System.IO.Directory.Delete(symLinkPath);
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Symbolic Link \"" + symLinkPath + "\" Deleted" }); 
+            }
+            else
+            {
+                //if (thisProginst.CopyFileFromThisAssembly("junction.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\junction.exe", symLinkPath + " -d");
+                p.Start();
+                p.WaitForExit();
+                if (p.ExitCode == 0)
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Windows-XP junction Deleted" });
+                else
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Cannot delete Windows-XP junction" });
             }
         }
 
 
         #region Methods for Sharing and unsharing a folder
-        internal int ShareFolder(string scriptDrvLetter)
+        internal int ShareFolder()
         {
+            if (ProgramData.osVerMaj == 6 && ProgramData.osVerMin == 0) // Vista will have been done by elevated symlink
+            {
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] {"Vista" + Pdrive.shareName + " Share Created" });
+                return 0;
+            }
             ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
             foreach (ManagementObject shr in shares)
             {
@@ -106,7 +159,7 @@ namespace TaxAideFlashShare
                 }
             }
 
-            if (ShareCreate(shareName, folder2Share + "\\" + ProgramData.symLinkName, "Tax-Aide Share") == 0)
+            if (ShareCreate(shareName, symLinkPath, "Tax-Aide Share") == 0)
             {
                 ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.shareName + " Share Created" });
                 return 0;
@@ -153,8 +206,27 @@ namespace TaxAideFlashShare
             return SecDesc;
         }
 
-        public void DeleteShares()
+        public int DeleteShares()
         {
+            if (ProgramData.osVerMaj == 6 && ProgramData.osVerMin == 0) // Vista 
+            {//Vista delete share requires elevated permissions
+                //get exe file out of assembly
+                if (thisProginst.CopyFileFromThisAssembly("TaxAideDeleteShr.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\TaxAideDeleteShr.exe");
+                p.Start();
+                p.WaitForExit();
+                if (p.ExitCode == 0)
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Tax-Aide Vista Share deleted" });
+                    return 0;
+                }
+                else
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Unable to delete Vista  Share" });
+                    return 1;
+                }
+            }
             ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
             foreach (ManagementObject shr in shares)
             {
@@ -164,11 +236,12 @@ namespace TaxAideFlashShare
                     catch (Exception e) 
                     {
                         ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Exception while deleting share. The error was \r\n" + e.Message });
+                        return 1;
                     }
                 }
             }
             ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.shareName + " Share Deleted" });
-
+            return 0;
         }
         internal void CheckUsersPublicShares()
         {
@@ -192,11 +265,5 @@ namespace TaxAideFlashShare
         #endregion
 
 
-        internal void DeleteSymLink()
-        {
-            if ( Directory.Exists(folder2Share + "\\" + ProgramData.symLinkName))
-                System.IO.Directory.Delete(folder2Share + "\\" + ProgramData.symLinkName);
-            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Symbolic Link \"" + folder2Share + "\\" + thisProginst.drvLetter + "\" Deleted" });
-        }
     }
 }
