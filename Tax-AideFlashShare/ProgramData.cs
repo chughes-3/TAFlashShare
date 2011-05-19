@@ -138,19 +138,25 @@ namespace TaxAideFlashShare
         {
             CopyFileFromThisAssembly("StopShare.ico", Environment.GetEnvironmentVariable("temp"));
             shelllink.ShellLink desktopShortcut = new shelllink.ShellLink();
-            desktopShortcut.ShortCutFile = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA FlashShare.lnk";
+            if (removable)
+                desktopShortcut.ShortCutFile = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA FlashShare.lnk"; 
+            else
+                desktopShortcut.ShortCutFile = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA Share.lnk"; 
             desktopShortcut.Target = scriptExePath + "\\" + thisProgName;
             desktopShortcut.Arguments = "/u";
             desktopShortcut.IconPath = Environment.GetEnvironmentVariable("temp") + "\\" + "StopShare.ico";
             desktopShortcut.Save();
             desktopShortcut.Dispose();
-            shelllink.ShellLink flashShortcut = new shelllink.ShellLink();
-            flashShortcut.ShortCutFile = scriptExePath + "\\Delete TA FlashShare.lnk";
-            flashShortcut.Target = scriptExePath + "\\" + thisProgName;
-            flashShortcut.Arguments = "/u";
-            flashShortcut.IconPath = scriptExePath + "\\" + thisProgName;
-            flashShortcut.Save();
-            flashShortcut.Dispose();
+            if (removable)
+            {
+                shelllink.ShellLink flashShortcut = new shelllink.ShellLink();
+                flashShortcut.ShortCutFile = scriptExePath + "\\Delete TA FlashShare.lnk";
+                flashShortcut.Target = scriptExePath + "\\" + thisProgName;
+                flashShortcut.Arguments = "/u";
+                flashShortcut.IconPath = scriptExePath + "\\" + thisProgName;
+                flashShortcut.Save();
+                flashShortcut.Dispose(); 
+            }
         }
     }
 }

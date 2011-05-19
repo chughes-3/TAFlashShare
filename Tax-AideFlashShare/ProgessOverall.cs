@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace TaxAideFlashShare
 {
     public partial class ProgessOverall : Form
     {
+        delegate void EnableOKCallBack();
         public ProgessOverall()
         {
             InitializeComponent();
@@ -26,8 +21,16 @@ namespace TaxAideFlashShare
         }
         public void EnableOk()
         {
-            buttonOK.Enabled = true;
-            this.Update();
+            if (this.buttonOK.InvokeRequired) //see http://msdn.microsoft.com/en-us/library/ms171728(VS.90).aspx
+            {
+                EnableOKCallBack d = new EnableOKCallBack(EnableOk);
+                this.Invoke(d);
+            }
+            else
+            {
+                buttonOK.Enabled = true;
+                this.Update(); 
+            }
         }
         private void buttonCancel_Click(object sender, EventArgs e)
         {

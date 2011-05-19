@@ -14,14 +14,14 @@ namespace TaxAideFlashShare
         public const string shareName = "TaxWiseServer_" + mapDriveLetter;
         const string shareNameLegacy = "TWSRVR_" + mapDriveLetter; 
         public string folder2Share; // NO SLASHES AT END
-        public string symLinkPath;
+        public string symLinkPath = "";
         ProgramData thisProginst;
         NetDrive pDrv = new NetDrive();
         enum shareCreateErrorCodes { Success = 0, AccessDenied = 2, UnknownFailure = 8, InvalidName = 9, InvalidLevel = 10, InvalidParameter = 21, DuplicateShare = 22, RedirectedPath = 23, UnknownDeviceorDirectory = 24, NetNameNotFound = 25 }
         public Pdrive(ProgramData thisProg)
         {
             thisProginst = thisProg;
-            if (ProgramData.osVerMaj == 6)
+            if (ProgramData.osVerMaj == 6 && thisProginst.removable)
             {
                 //setup public folders
                 folder2Share = Environment.GetEnvironmentVariable("PUBLIC");
@@ -30,7 +30,13 @@ namespace TaxAideFlashShare
             {
                 folder2Share = Environment.GetEnvironmentVariable("HOMEDRIVE");
             }
-            symLinkPath = folder2Share + "\\" + ProgramData.symLinkName;
+            if (thisProginst.removable) //Desktop no symlink but all routines still work because symlinkpath = folder2share
+                symLinkPath = folder2Share + "\\" + ProgramData.symLinkName;
+            else
+                if (folder2Share.EndsWith(":")) // Fixes idiosyncracy of net share will not allow \ on regulare folders but must have it on drives
+                    symLinkPath = folder2Share + "\\";
+                else
+                    symLinkPath = folder2Share;
         }
         internal int MapDrive(string scriptDrvLetter)
         {
@@ -104,6 +110,8 @@ namespace TaxAideFlashShare
                 if (p.ExitCode == 0)
                 {
                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Windows-XP junction created" });
+                    DirectoryInfo dir = new DirectoryInfo(symLinkPath);
+                    dir.Attributes |= FileAttributes.Hidden;
                     return 0;
                 }
                 else
@@ -158,7 +166,6 @@ namespace TaxAideFlashShare
                     }
                 }
             }
-
             if (ShareCreate(shareName, symLinkPath, "Tax-Aide Share") == 0)
             {
                 ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.shareName + " Share Created" });
@@ -181,7 +188,7 @@ namespace TaxAideFlashShare
             if ((uint)(outParams.Properties["ReturnValue"].Value) != 0)
             {
                 string errCode = Enum.GetName(typeof(shareCreateErrorCodes), outParams.Properties["ReturnValue"].Value);
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { String.Format("Unable to create a network share. The error message was {0}\n\nShareName = {1}\nFolderPath = {2}", errCode, ShareName, FolderPath) });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { String.Format("Unable to create a network share. The error message was {0}\r\n\r\nShareName = {1}\r\nFolderPath = {2}", errCode, ShareName, FolderPath) });
                 return 1;
             }
             else return 0;
@@ -243,24 +250,24 @@ namespace TaxAideFlashShare
             ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.shareName + " Share Deleted" });
             return 0;
         }
-        internal void CheckUsersPublicShares()
-        {
-            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Checking that Users and Public folders are shared, fixing if necessary." });
-            bool usersExist = false;
-            bool publicExist = false;
-            ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
-            foreach (ManagementObject shr in shares)
-            {
-                if (shr.GetPropertyValue("Name").ToString() == "Users")
-                    usersExist = true;
-                if (shr.GetPropertyValue("Name").ToString() == "Public")
-                    publicExist = true;
-            }
-            if (!usersExist)
-                ShareCreate("Users", folder2Share.Remove(folder2Share.Length - 8), "");
-            if (!publicExist)
-                ShareCreate("Public", folder2Share, "");
-        }
+        //internal void CheckUsersPublicShares()
+        //{
+        //    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Checking that Users and Public folders are shared, fixing if necessary." });
+        //    bool usersExist = false;
+        //    bool publicExist = false;
+        //    ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
+        //    foreach (ManagementObject shr in shares)
+        //    {
+        //        if (shr.GetPropertyValue("Name").ToString() == "Users")
+        //            usersExist = true;
+        //        if (shr.GetPropertyValue("Name").ToString() == "Public")
+        //            publicExist = true;
+        //    }
+        //    if (!usersExist)
+        //        ShareCreate("Users", folder2Share.Remove(folder2Share.Length - 8), "");
+        //    if (!publicExist)
+        //        ShareCreate("Public", folder2Share, "");
+        //}
         
         #endregion
 
