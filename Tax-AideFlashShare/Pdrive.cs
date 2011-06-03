@@ -37,29 +37,31 @@ namespace TaxAideFlashShare
         internal int TestPplusShareExistence()
         {
             //Test if pdrive or share is already used
-            //Needs reworking to msbox user offering cancel choice of user removable or programmatic removal and reboot don't forget persistent mapping as well as regular
             if (Directory.Exists(ProjConst.mapDriveName))
             {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "P drive exists, will try unmapping" });
-                pDrv.Persistent = true; // these are set to attempt to force a more direct unmap and registry update
-                pDrv.Force = true;
-                int ret = UnMapDrive();
-                pDrv.Persistent = false;    //set up for our pdrive which is temporary
-                pDrv.Force = false;
-                if (ret == 1)
-                {
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping failed, Please remove the P drive manually then restart the program" });
-                    return 1;
-                }
-               //Need registry test and deletion here
-                else
-                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping apparently successfully, if errors occur later the unmapping may have to be done manually" });
-            }
-            if (Directory.Exists(ProjConst.mapDriveName))
-            {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Attempted Unmapping failed,P drive still exists, Please remove the P drive manually then restart the program" });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "The P drive exists, this program uses the P drive, please free up the P drive then restart this program" });
                 return 1;
+                //Auto unmapping p drive caused endless problems and what if it is a tc drive ie not mapped
+               // ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "P drive exists, will try unmapping" });
+               // pDrv.Persistent = true; // these are set to attempt to force a more direct unmap and registry update
+               // pDrv.Force = true;
+               // int ret = UnMapDrive();
+               // pDrv.Persistent = false;    //set up for our pdrive which is temporary
+               // pDrv.Force = false;
+               // if (ret == 1)
+               // {
+               //     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping failed, Please remove the P drive manually then restart the program" });
+               //     return 1;
+               // }
+               ////Need registry test and deletion here
+               // else
+               //      ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping apparently successfully, if errors occur later the unmapping may have to be done manually" });
             }
+            //if (Directory.Exists(ProjConst.mapDriveName))
+            //{
+            //    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Attempted Unmapping failed,P drive still exists, Please remove the P drive manually then restart the program" });
+            //    return 1;
+            //}
             //Find out if share exists
             ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
             foreach (ManagementObject shr in shares)
@@ -94,13 +96,17 @@ namespace TaxAideFlashShare
         {
             if (Directory.Exists(ProjConst.mapDriveName))
             {
+                pDrv.Force = true;
                 pDrv.LocalDrive = ProjConst.mapDriveName;    //slashes are removed in called method
                 if (pDrv.UnMapDrive() == 0)
                 {
                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.mapDriveName + " Drive UnMapped" });
                     return 0;
                 }
-                else return 1;
+                else
+                {
+                    return 1;
+                }
             }
             else
             {

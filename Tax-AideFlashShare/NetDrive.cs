@@ -227,10 +227,11 @@ namespace TaxAideFlashShare
             //call unmap and return
             uint iFlags = 0;
             if (lf_Persistent) { iFlags += (uint) WinNetConst.CONNECT_UPDATE_PROFILE; }
-            int i = WNetCancelConnection2(ls_Drive, iFlags, Convert.ToInt32(pfForce));
             try
             {
-                if (i != 0) i = WNetCancelConnection2(ls_ShareName, iFlags, Convert.ToInt32(pfForce));  //disconnect if localname was null
+                
+                int i = WNetCancelConnection2(ls_Drive, iFlags, Convert.ToInt32(pfForce));
+                //if (i != 0) i = WNetCancelConnection2(ls_ShareName, iFlags, Convert.ToInt32(pfForce));  //disconnect if localname was null Note this line was in original code. Looks like it to disconnect a share which has no drive letter
                 if (i > 0) { throw new System.ComponentModel.Win32Exception(i); }
             }
             catch (System.ComponentModel.Win32Exception w)
