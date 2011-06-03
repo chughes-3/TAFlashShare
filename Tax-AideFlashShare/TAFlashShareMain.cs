@@ -17,21 +17,21 @@ namespace TaxAideFlashShare
             Pdrive fold = new Pdrive(thisProg);
             if (args.Length == 0)
             {
+                //fold.CheckUsersPublicShares();  // check conditions are right for setting up shares
+                if (fold.TestPplusShareExistence() == 1)
+                    return;
                 if (thisProg.removable)
-                {
                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "We have a removable drive" });
-                    //fold.CheckUsersPublicShares();  // check conditions are right for setting up shares
-                    if (fold.SetSymbolicLink() != 0)
-                        return; //Error on creation of symlink should have been output so simply exit leaving message window up
-                }
                 else
                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "We are running from a hard drive or network drive" });
+                if (fold.SetSymbolicLink() != 0)    // symlink will not be done if desktop checked in method
+                    return; //Error on creation of symlink should have been output so simply exit leaving message window up
                 thisProg.CreateShortcuts();
                 if (fold.ShareFolder() != 0)
                     return; // failed on folder sharing
                 if (fold.MapDrive(thisProg.drvLetter) != 0)
                     return; //failed mapping
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "\r\n\r\n" + Pdrive.mapDriveName + "  Drive Created and Shared. \r\nIf no errors are listed above and this system is on a network the Workstations can be started now " });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "\r\n\r\n" + ProjConst.mapDriveName + "  Drive Created and Shared. \r\nIf no errors are listed above and this system is on a network the Workstations can be started now " });
                 ProgOverallThread.progOverallWin.EnableOk();
             }
             else

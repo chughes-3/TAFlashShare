@@ -6,15 +6,12 @@ namespace TaxAideDeleteShr
 {
     class DeleteShrs
     {
-        public const string mapDriveLetter = "P";
-        public const string shareName = "TaxWiseServer_" + mapDriveLetter;
-        const string shareNameLegacy = "TWSRVR_" + mapDriveLetter;
         public void DeleteShares()
         {
             ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
             foreach (ManagementObject shr in shares)
             {
-                if (shr.GetPropertyValue("Name").ToString() == shareName | shr.GetPropertyValue("Name").ToString() == shareNameLegacy)
+                if (shr.GetPropertyValue("Name").ToString() == TaxAideFlashShare.ProjConst.shareName | shr.GetPropertyValue("Name").ToString() == TaxAideFlashShare.ProjConst.shareNameLegacy)
                 {
                     try { shr.Delete(); }
                     catch (Exception e)

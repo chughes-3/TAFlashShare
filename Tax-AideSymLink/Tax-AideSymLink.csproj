@@ -60,6 +60,12 @@
     </Compile>
     <Compile Include="SymLink.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tax-AideFlashShare\TaxAideFlashShare.csproj">
+      <Project>{5242C39F-B5EB-485C-8D0E-3CE807B130F0}</Project>
+      <Name>TaxAideFlashShare</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

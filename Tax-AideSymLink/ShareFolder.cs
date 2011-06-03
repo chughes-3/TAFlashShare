@@ -7,36 +7,10 @@ namespace Tax_AideSymLink
 {
     class ShareFolder
     {
-        public const string mapDriveLetter = "P";
-        public const string mapDriveName = mapDriveLetter + ":\\";
-        public const string shareName = "TaxWiseServer_" + mapDriveLetter;
         enum shareCreateErrorCodes { Success = 0, AccessDenied = 2, UnknownFailure = 8, InvalidName = 9, InvalidLevel = 10, InvalidParameter = 21, DuplicateShare = 22, RedirectedPath = 23, UnknownDeviceorDirectory = 24, NetNameNotFound = 25 }
 
         #region Methods for Sharing and unsharing a folder
-        internal int SharFolder(string symLinkpath4sharing)
-        {
-            ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
-            foreach (ManagementObject shr in shares)
-            {
-                if (shr.GetPropertyValue("Name").ToString() == shareName)
-                {
-                    try { shr.Delete(); }
-                    catch (Exception e)
-                    {
-                        MessageBox.Show( "Exception when creating the " + shareName + " share. The message was \r\n " + e.Message );
-                        return 1;
-                    }
-                }
-            }
-
-            if (ShareCreate(shareName, symLinkpath4sharing, "Tax-Aide Share") == 0)
-            {
-                return 0;
-            }
-            else
-                return 1;
-        }
-        private int ShareCreate(string ShareName, string FolderPath, string Description)
+        internal int ShareCreate(string ShareName, string FolderPath, string Description)
         {
             ManagementClass mgmtClass = new ManagementClass("Win32_Share");
             ManagementBaseObject inParams = mgmtClass.GetMethodParameters("Create");

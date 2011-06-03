@@ -9,10 +9,6 @@ namespace TaxAideFlashShare
 {
     class Pdrive
     {
-        public const string mapDriveLetter = "P";
-        public const string mapDriveName = mapDriveLetter + ":\\";
-        public const string shareName = "TaxWiseServer_" + mapDriveLetter;
-        const string shareNameLegacy = "TWSRVR_" + mapDriveLetter; 
         public string folder2Share; // NO SLASHES AT END
         public string symLinkPath = "";
         ProgramData thisProginst;
@@ -38,44 +34,84 @@ namespace TaxAideFlashShare
                 else
                     symLinkPath = folder2Share;
         }
-        internal int MapDrive(string scriptDrvLetter)
+        internal int TestPplusShareExistence()
         {
-            if (Directory.Exists(mapDriveName))
+            //Test if pdrive or share is already used
+            //Needs reworking to msbox user offering cancel choice of user removable or programmatic removal and reboot don't forget persistent mapping as well as regular
+            if (Directory.Exists(ProjConst.mapDriveName))
             {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.mapDriveName + " Drive Exists. Either disconnect it manually or by running this programs delete option - then rerun this program" });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "P drive exists, will try unmapping" });
+                pDrv.Persistent = true; // these are set to attempt to force a more direct unmap and registry update
+                pDrv.Force = true;
+                int ret = UnMapDrive();
+                pDrv.Persistent = false;    //set up for our pdrive which is temporary
+                pDrv.Force = false;
+                if (ret == 1)
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping failed, Please remove the P drive manually then restart the program" });
+                    return 1;
+                }
+               //Need registry test and deletion here
+                else
+                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping apparently successfully, if errors occur later the unmapping may have to be done manually" });
+            }
+            if (Directory.Exists(ProjConst.mapDriveName))
+            {
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Attempted Unmapping failed,P drive still exists, Please remove the P drive manually then restart the program" });
                 return 1;
             }
-            pDrv.LocalDrive = mapDriveName;    //slashes are removed by called method
-            pDrv.ShareName = "\\\\" + Environment.GetEnvironmentVariable("COMPUTERNAME") + "\\" + shareName; 
+            //Find out if share exists
+            ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
+            foreach (ManagementObject shr in shares)
+            {
+                if (shr.GetPropertyValue("Name").ToString() == ProjConst.shareName)
+                {
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "The" + ProjConst.shareName + " share already exists, trying to delete it in order to add the share correctly" });
+                    if (DeleteShares() == 1)
+                        return 1;
+                }
+            }
+            return 0;
+        }
+
+        internal int MapDrive(string scriptDrvLetter)
+        {
+            if (Directory.Exists(ProjConst.mapDriveName))
+            {
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.mapDriveName + " Drive Exists. Either disconnect it manually or by running this programs delete option - then rerun this program" });
+                return 1;
+            }
+            pDrv.LocalDrive = ProjConst.mapDriveName;    //slashes are removed by called method
+            pDrv.ShareName = "\\\\" + Environment.GetEnvironmentVariable("COMPUTERNAME") + "\\" + ProjConst.shareName; 
             if (pDrv.MapDrive() == 0)
             {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.mapDriveName + " Drive Mapped" });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.mapDriveName + " Drive Mapped" });
                 return 0;
             }
             else return 1;
         }
         internal int UnMapDrive()
         {
-            if (Directory.Exists(mapDriveName))
+            if (Directory.Exists(ProjConst.mapDriveName))
             {
-                pDrv.LocalDrive = mapDriveName;    //slashes are removed in called method
+                pDrv.LocalDrive = ProjConst.mapDriveName;    //slashes are removed in called method
                 if (pDrv.UnMapDrive() == 0)
                 {
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.mapDriveName + " Drive UnMapped" });
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.mapDriveName + " Drive UnMapped" });
                     return 0;
                 }
                 else return 1;
             }
             else
             {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.mapDriveName + " Does not Exist, Unmapping not done" });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.mapDriveName + " Does not Exist, Unmapping not done" });
                 return 1;
             }
         }
 
         internal int SetSymbolicLink()
         {
-            if (Directory.Exists(symLinkPath))
+            if (thisProginst.removable && Directory.Exists(symLinkPath))
             {
                 ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Symbolic Link already exists - will not attempt creation" });
                 return 0;
@@ -86,7 +122,10 @@ namespace TaxAideFlashShare
                 //get exe file out of assembly
                 if (thisProginst.CopyFileFromThisAssembly("Tax-AideSymLink.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
                 Process p = new Process();
-                p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\Tax-AideSymLink.exe", symLinkPath + " " +thisProginst.drvLetter + ":\\");
+                if (thisProginst.removable == true)
+                    p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\Tax-AideSymLink.exe", symLinkPath + " " + thisProginst.drvLetter + ":\\" + " Removable");
+                else
+                    p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\Tax-AideSymLink.exe", symLinkPath + " " + thisProginst.drvLetter + ":\\" + " Desktop");  // drvletter not used for desktop but left in there          
                 p.Start();
                 p.WaitForExit();
                 if (p.ExitCode == 0)
@@ -102,23 +141,27 @@ namespace TaxAideFlashShare
             }
             else
             {
-                if (thisProginst.CopyFileFromThisAssembly("junction.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
-                Process p = new Process();
-                p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\junction.exe", symLinkPath + " " + thisProginst.drvLetter + ":\\" + " /accepteula");
-                p.Start();
-                p.WaitForExit();
-                if (p.ExitCode == 0)
+                if (thisProginst.removable)
                 {
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Windows-XP junction created" });
-                    DirectoryInfo dir = new DirectoryInfo(symLinkPath);
-                    dir.Attributes |= FileAttributes.Hidden;
-                    return 0;
+                    if (thisProginst.CopyFileFromThisAssembly("junction.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
+                    Process p = new Process();
+                    p.StartInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("temp") + "\\junction.exe", symLinkPath + " " + thisProginst.drvLetter + ":\\" + " /accepteula");
+                    p.Start();
+                    p.WaitForExit();
+                    if (p.ExitCode == 0)
+                    {
+                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Windows-XP junction created" });
+                        DirectoryInfo dir = new DirectoryInfo(symLinkPath);
+                        dir.Attributes |= FileAttributes.Hidden;
+                        return 0;
+                    }
+                    else
+                    {
+                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Cannot create Windows-XP junction" });
+                        return 1;
+                    } 
                 }
-                else
-                {
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Cannot create Windows-XP junction" });
-                    return 1;
-                }
+                return 0;
             }
         }
         internal void DeleteSymLink()
@@ -147,40 +190,40 @@ namespace TaxAideFlashShare
         #region Methods for Sharing and unsharing a folder
         internal int ShareFolder()
         {
-            if (ProgramData.osVerMaj == 6 && ProgramData.osVerMin == 0) // Vista will have been done by elevated symlink
+            if (ProgramData.osVerMaj == 6 ) // Vista/Windows 7 will have been done by elevated symlink
             {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] {"Vista" + Pdrive.shareName + " Share Created" });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] {"Vista/Windows 7 " + ProjConst.shareName + " Share Created" });
                 return 0;
             }
             ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
             foreach (ManagementObject shr in shares)
             {
-                if (shr.GetPropertyValue("Name").ToString() == shareName)
+                if (shr.GetPropertyValue("Name").ToString() == ProjConst.shareName)
                 {
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "The" + shareName + " share already exists, trying to delete it in order to add the share correctly" });
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "The" + ProjConst.shareName + " share already exists, trying to delete it in order to add the share correctly" });
                     try { shr.Delete(); }
                     catch (Exception e) 
                     {
-                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Exception when creating the " + shareName + " share. The message was \r\n " + e.Message });
+                        ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Exception when creating the " + ProjConst.shareName + " share. The message was \r\n " + e.Message });
                         return 1 ;
                     }
                 }
             }
-            if (ShareCreate(shareName, symLinkPath, "Tax-Aide Share") == 0)
+            if (ShareCreate(ProjConst.shareName, symLinkPath, "Tax-Aide Share") == 0)
             {
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.shareName + " Share Created" });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.shareName + " Share Created" });
                 return 0;
             }
             else
                 return 1;
         }
-        private int ShareCreate(string ShareName, string FolderPath, string Description)
+        private int ShareCreate(string shareName, string FolderPath, string Description)
         {
             ManagementClass mgmtClass = new ManagementClass("Win32_Share");
             ManagementBaseObject inParams = mgmtClass.GetMethodParameters("Create");
             ManagementBaseObject outParams;
             inParams["Description"] = Description;
-            inParams["Name"] = ShareName;
+            inParams["Name"] = shareName;
             inParams["Path"] = FolderPath;
             inParams["Type"] = 0x0; //disk drive
             inParams["Access"] = SecurityDescriptor();  //for Everyone full perms
@@ -188,7 +231,7 @@ namespace TaxAideFlashShare
             if ((uint)(outParams.Properties["ReturnValue"].Value) != 0)
             {
                 string errCode = Enum.GetName(typeof(shareCreateErrorCodes), outParams.Properties["ReturnValue"].Value);
-                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { String.Format("Unable to create a network share. The error message was {0}\r\n\r\nShareName = {1}\r\nFolderPath = {2}", errCode, ShareName, FolderPath) });
+                ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { String.Format("Unable to create a network share. The error message was {0}\r\n\r\nshareName = {1}\r\nFolderPath = {2}", errCode, shareName, FolderPath) });
                 return 1;
             }
             else return 0;
@@ -215,7 +258,7 @@ namespace TaxAideFlashShare
 
         public int DeleteShares()
         {
-            if (ProgramData.osVerMaj == 6 && ProgramData.osVerMin == 0) // Vista 
+            if (ProgramData.osVerMaj > 5) //Vista or Win 7
             {//Vista delete share requires elevated permissions
                 //get exe file out of assembly
                 if (thisProginst.CopyFileFromThisAssembly("TaxAideDeleteShr.exe", Environment.GetEnvironmentVariable("temp")) != 0) return 1;
@@ -225,7 +268,7 @@ namespace TaxAideFlashShare
                 p.WaitForExit();
                 if (p.ExitCode == 0)
                 {
-                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Tax-Aide Vista Share deleted" });
+                    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Tax-Aide Vista/Windows 7 Share deleted" });
                     return 0;
                 }
                 else
@@ -237,7 +280,7 @@ namespace TaxAideFlashShare
             ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
             foreach (ManagementObject shr in shares)
             {
-                if (shr.GetPropertyValue("Name").ToString() == shareName | shr.GetPropertyValue("Name").ToString() == shareNameLegacy)
+                if (shr.GetPropertyValue("Name").ToString() == ProjConst.shareName | shr.GetPropertyValue("Name").ToString() == ProjConst.shareNameLegacy)
                 {
                     try { shr.Delete(); }
                     catch (Exception e) 
@@ -247,7 +290,7 @@ namespace TaxAideFlashShare
                     }
                 }
             }
-            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { Pdrive.shareName + " Share Deleted" });
+            ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.shareName + " Share Deleted" });
             return 0;
         }
         //internal void CheckUsersPublicShares()
