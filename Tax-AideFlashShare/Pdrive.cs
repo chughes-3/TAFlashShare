@@ -13,7 +13,7 @@ namespace TaxAideFlashShare
         public string symLinkPath = "";
         ProgramData thisProginst;
         NetDrive pDrv = new NetDrive();
-        enum shareCreateErrorCodes { Success = 0, AccessDenied = 2, UnknownFailure = 8, InvalidName = 9, InvalidLevel = 10, InvalidParameter = 21, DuplicateShare = 22, RedirectedPath = 23, UnknownDeviceorDirectory = 24, NetNameNotFound = 25 }
+
         public Pdrive(ProgramData thisProg)
         {
             thisProginst = thisProg;
@@ -34,6 +34,7 @@ namespace TaxAideFlashShare
                 else
                     symLinkPath = folder2Share;
         }
+
         internal int TestPplusShareExistence()
         {
             //Test if pdrive or share is already used
@@ -41,27 +42,31 @@ namespace TaxAideFlashShare
             {
                 ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "The P drive exists, this program uses the P drive, please free up the P drive then restart this program" });
                 return 1;
+                #region Commented out code for attempted unmapping
                 //Auto unmapping p drive caused endless problems and what if it is a tc drive ie not mapped
-               // ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "P drive exists, will try unmapping" });
-               // pDrv.Persistent = true; // these are set to attempt to force a more direct unmap and registry update
-               // pDrv.Force = true;
-               // int ret = UnMapDrive();
-               // pDrv.Persistent = false;    //set up for our pdrive which is temporary
-               // pDrv.Force = false;
-               // if (ret == 1)
-               // {
-               //     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping failed, Please remove the P drive manually then restart the program" });
-               //     return 1;
-               // }
-               ////Need registry test and deletion here
-               // else
-               //      ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping apparently successfully, if errors occur later the unmapping may have to be done manually" });
+                // ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "P drive exists, will try unmapping" });
+                // pDrv.Persistent = true; // these are set to attempt to force a more direct unmap and registry update
+                // pDrv.Force = true;
+                // int ret = UnMapDrive();
+                // pDrv.Persistent = false;    //set up for our pdrive which is temporary
+                // pDrv.Force = false;
+                // if (ret == 1)
+                // {
+                //     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping failed, Please remove the P drive manually then restart the program" });
+                //     return 1;
+                // }
+                ////Need registry test and deletion here
+                // else
+                //      ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Unmapping apparently successfully, if errors occur later the unmapping may have to be done manually" });
+                #endregion
             }
+                #region Commented out code for attempted unmapping
             //if (Directory.Exists(ProjConst.mapDriveName))
             //{
-            //    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Attempted Unmapping failed,P drive still exists, Please remove the P drive manually then restart the program" });
+            //    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Attempted Unmapping failed,P drive still exists, Please remove the P drive manually then restart the program" }); 
             //    return 1;
             //}
+                #endregion
             //Find out if share exists
             ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
             foreach (ManagementObject shr in shares)
@@ -92,6 +97,7 @@ namespace TaxAideFlashShare
             }
             else return 1;
         }
+
         internal int UnMapDrive()
         {
             if (Directory.Exists(ProjConst.mapDriveName))
@@ -170,6 +176,7 @@ namespace TaxAideFlashShare
                 return 0;
             }
         }
+
         internal void DeleteSymLink()
         {
             if (ProgramData.osVerMaj > 5)
@@ -191,7 +198,6 @@ namespace TaxAideFlashShare
                     ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "ERROR - Cannot delete Windows-XP junction" });
             }
         }
-
 
         #region Methods for Sharing and unsharing a folder
         internal int ShareFolder()
@@ -223,6 +229,8 @@ namespace TaxAideFlashShare
             else
                 return 1;
         }
+
+        enum shareCreateErrorCodes { Success = 0, AccessDenied = 2, UnknownFailure = 8, InvalidName = 9, InvalidLevel = 10, InvalidParameter = 21, DuplicateShare = 22, RedirectedPath = 23, UnknownDeviceorDirectory = 24, NetNameNotFound = 25 }
         private int ShareCreate(string shareName, string FolderPath, string Description)
         {
             ManagementClass mgmtClass = new ManagementClass("Win32_Share");
@@ -299,24 +307,6 @@ namespace TaxAideFlashShare
             ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { ProjConst.shareName + " Share Deleted" });
             return 0;
         }
-        //internal void CheckUsersPublicShares()
-        //{
-        //    ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Checking that Users and Public folders are shared, fixing if necessary." });
-        //    bool usersExist = false;
-        //    bool publicExist = false;
-        //    ManagementObjectCollection shares = new ManagementClass("Win32_Share").GetInstances();
-        //    foreach (ManagementObject shr in shares)
-        //    {
-        //        if (shr.GetPropertyValue("Name").ToString() == "Users")
-        //            usersExist = true;
-        //        if (shr.GetPropertyValue("Name").ToString() == "Public")
-        //            publicExist = true;
-        //    }
-        //    if (!usersExist)
-        //        ShareCreate("Users", folder2Share.Remove(folder2Share.Length - 8), "");
-        //    if (!publicExist)
-        //        ShareCreate("Public", folder2Share, "");
-        //}
         
         #endregion
 

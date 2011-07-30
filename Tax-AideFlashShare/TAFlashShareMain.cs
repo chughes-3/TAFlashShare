@@ -17,7 +17,6 @@ namespace TaxAideFlashShare
             Pdrive fold = new Pdrive(thisProg);
             if (args.Length == 0)
             {
-                //fold.CheckUsersPublicShares();  // check conditions are right for setting up shares
                 if (fold.TestPplusShareExistence() == 1)
                     return;
                 if (thisProg.removable)

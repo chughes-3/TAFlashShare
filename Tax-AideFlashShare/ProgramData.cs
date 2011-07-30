@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Management;
 using System.Reflection;
 using System.Windows.Forms;
 using System.IO;
+using System.Runtime.InteropServices;
+
 
 namespace TaxAideFlashShare
 {
@@ -18,15 +19,18 @@ namespace TaxAideFlashShare
         public string drvLetter; //Holds letter of drive on Script exe path
         public bool removable = false;  //will be set later if program running from usb drive
         public string scriptExePath = Assembly.GetEntryAssembly().CodeBase;    // format is, file:///D:/blah/blah.exe so 3 slashes then next 2 to get drive
-        string thisProgName = Assembly.GetExecutingAssembly().GetName().Name;
-        string patternPath = "(?<=///).+(?=/.*$)";  //matches d:/trav in file:///d:/trav/abc.exe
-        //string pattern = "(?<=//)[a-zA-Z](?=:)";    //matches // followed by a letter followed by :
+        string thisProgName;    // = Assembly.GetExecutingAssembly().GetName().Name;
+        string shrtCutName;
+        [DllImport("kernel32.dll")]
+        private static extern int GetModuleFileName(int handle, StringBuilder fileNameOut, uint nSize);
 
         public ProgramData()
         {
-            Regex r = new Regex(patternPath);
-            Match m = r.Match(scriptExePath);
-            scriptExePath = m.Value.Replace("/", "\\");  //sets path to script directory
+            thisProgName = Assembly.GetExecutingAssembly().GetName().Name;   // has to be done here does not get assigned in XP if done earlier
+            StringBuilder exeFileFullPath = new StringBuilder(256);
+            GetModuleFileName(0, exeFileFullPath, (uint)256);
+            shrtCutName = exeFileFullPath.ToString().Substring(exeFileFullPath.ToString().LastIndexOf("\\") + 1);
+            scriptExePath = exeFileFullPath.ToString().Substring(0, exeFileFullPath.ToString().LastIndexOf("\\"));
             drvLetter = scriptExePath.Substring(0, 1);
             ProgOverallThread.progOverallWin.Invoke(ProgOverallThread.progressUpdate, new object[] { "Testing for removable drive" });
             GetUSBDrivesSetRemovable();
@@ -141,8 +145,8 @@ namespace TaxAideFlashShare
             if (removable)
                 desktopShortcut.ShortCutFile = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA FlashShare.lnk"; 
             else
-                desktopShortcut.ShortCutFile = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA Share.lnk"; 
-            desktopShortcut.Target = scriptExePath + "\\" + thisProgName;
+                desktopShortcut.ShortCutFile = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) + "\\Delete TA Share.lnk";
+            desktopShortcut.Target = scriptExePath + "\\" + shrtCutName;
             desktopShortcut.Arguments = "/u";
             desktopShortcut.IconPath = Environment.GetEnvironmentVariable("temp") + "\\" + "StopShare.ico";
             desktopShortcut.Save();
