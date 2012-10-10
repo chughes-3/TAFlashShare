@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaxAideFlashShare", "Tax-AideFlashShare\TaxAideFlashShare.csproj", "{5242C39F-B5EB-485C-8D0E-3CE807B130F0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaxAideDeleteShr", "TaxAideDeleteShr\TaxAideDeleteShr.csproj", "{DB6E8270-EE0B-4068-9101-4F62DB8452E7}"
