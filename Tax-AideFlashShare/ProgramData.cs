@@ -19,14 +19,16 @@ namespace TaxAideFlashShare
         public string drvLetter; //Holds letter of drive on Script exe path
         public bool removable = false;  //will be set later if program running from usb drive
         public string scriptExePath = Assembly.GetEntryAssembly().CodeBase;    // format is, file:///D:/blah/blah.exe so 3 slashes then next 2 to get drive
-        string thisProgName;    // = Assembly.GetExecutingAssembly().GetName().Name;
+        string thisProgName;
+        string thisProgPath;
         string shrtCutName;
         [DllImport("kernel32.dll")]
         private static extern int GetModuleFileName(int handle, StringBuilder fileNameOut, uint nSize);
 
         public ProgramData()
         {
-            thisProgName = Assembly.GetExecutingAssembly().GetName().Name;   // has to be done here does not get assigned in XP if done earlier
+            thisProgName = Assembly.GetExecutingAssembly().GetName().Name;
+            thisProgPath = Assembly.GetEntryAssembly().Location;   // has to be done here does not get assigned in XP if done earlier
             StringBuilder exeFileFullPath = new StringBuilder(256);
             GetModuleFileName(0, exeFileFullPath, (uint)256);
             shrtCutName = exeFileFullPath.ToString().Substring(exeFileFullPath.ToString().LastIndexOf("\\") + 1);
@@ -155,9 +157,9 @@ namespace TaxAideFlashShare
             {
                 shelllink.ShellLink flashShortcut = new shelllink.ShellLink();
                 flashShortcut.ShortCutFile = scriptExePath + "\\Delete TA FlashShare.lnk";
-                flashShortcut.Target = scriptExePath + "\\" + thisProgName;
+                flashShortcut.Target = thisProgPath;
                 flashShortcut.Arguments = "/u";
-                flashShortcut.IconPath = scriptExePath + "\\" + thisProgName;
+                flashShortcut.IconPath = thisProgPath;
                 flashShortcut.Save();
                 flashShortcut.Dispose(); 
             }

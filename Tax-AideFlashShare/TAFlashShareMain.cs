@@ -23,6 +23,11 @@ namespace TaxAideFlashShare
                 MessageBox.Show("This Program is not intended for operation on Windows XP per Tax-Aide Policy\r\nExiting\r\n\r\nQuestions? Please contact your TCS or TaxAideTech","AARP Foundation Tax-Aide");
                 Environment.Exit(0); 
             }
+            if (IsRunningFromNetwork(System.IO.Path.GetPathRoot(AppDomain.CurrentDomain.BaseDirectory)))
+            {
+                MessageBox.Show("This Program cannot be run from a network drive.\r\nExiting\r\n\r\nQuestions? Please contact your TCS or TaxAideTech","AARP Foundation Tax-Aide");
+                Environment.Exit(0); 
+            }
             new ProgOverallThread(); // initialize status window
             ProgramData thisProg = new ProgramData();
             Pdrive fold = new Pdrive(thisProg);
@@ -67,6 +72,29 @@ namespace TaxAideFlashShare
                         Environment.Exit(1);
                         break;
                 }
+        }
+        internal static bool IsRunningFromNetwork(string rootPath)
+        {
+            try
+            {
+                System.IO.DriveInfo info = new System.IO.DriveInfo(rootPath);
+                if (info.DriveType == System.IO.DriveType.Network)
+                    return true;
+                else
+                    return false;
+            }
+            catch
+            {
+                try
+                {
+                    Uri uri = new Uri(rootPath);
+                    return uri.IsUnc;
+                }
+                catch
+                {
+                    return false;
+                }
+            } 
         }
     }
 }

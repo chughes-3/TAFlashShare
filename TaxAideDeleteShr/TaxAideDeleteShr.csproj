@@ -81,6 +81,6 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>"C:\Program Files\Microsoft SDKs\Windows\v7.0\Bin\mt.exe" -manifest "$(ProjectDir)bin\debug\$(TargetName).exe.manifest" -outputresource:"$(TargetDir)$(TargetName).exe;1"</PostBuildEvent>
+    <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Bin\mt.exe" -manifest "$(ProjectDir)bin\debug\$(TargetName).exe.manifest" -outputresource:"$(TargetDir)$(TargetName).exe;#1"</PostBuildEvent>
   </PropertyGroup>
 </Project>
